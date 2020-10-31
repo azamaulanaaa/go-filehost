@@ -3,11 +3,13 @@ package zippyshare
 import (
 	"bytes"
 	"context"
+	"errors"
 	"filehost/hosting"
 	"filehost/lib"
 	"io"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -23,7 +25,7 @@ type uploadSession struct {
 }
 
 // Upload is func to upload a file
-func (z *Service) Upload(ctx context.Context, filename string, filereader io.Reader) (url []hosting.URL, err error) {
+func (s *Service) Upload(ctx context.Context, filename string, filereader io.Reader) (url []hosting.URL, err error) {
 	// prep http client
 	client := http.DefaultClient
 
@@ -68,6 +70,45 @@ func (z *Service) Upload(ctx context.Context, filename string, filereader io.Rea
 		url[k].Expire = time.Now().Add(expire).Nanosecond()
 	}
 	return
+}
+
+// DirectDownloadURI is func to generate direct download link
+func (s *Service) DirectDownloadURI(ctx context.Context, uri string) (duri string, err error) {
+	re := regexp.MustCompile("\\/\\/www([\\d]+)\\.zippyshare\\.com\\/v\\/([^\\/]+)")
+	match := re.FindStringSubmatch(uri)
+	if len(match) != 3 {
+		err = errors.New("Invalid uri")
+		return "", err
+	}
+	duri = "https://www" + match[1] + ".zippyshare.com/d/" + match[2] + "/"
+
+	client := http.DefaultClient
+	res, err := client.Get(uri)
+	if err != nil {
+		return "", err
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(res.Body)
+	body := buf.String()
+
+	re = regexp.MustCompile("var a = ([\\d]+)\\;")
+	match = re.FindStringSubmatch(body)
+	if len(match) != 2 {
+		err = errors.New("Unable to get unique download code")
+		return "", err
+	}
+	a, _ := strconv.Atoi(match[1])
+	duri = duri + strconv.Itoa((a*a*a)+3) + "/"
+
+	re = regexp.MustCompile("\\(Math\\.pow\\(a, 3\\)\\+b\\)\\+\\\"\\/([^\\\"]+)\\\";")
+	match = re.FindStringSubmatch(body)
+	if len(match) != 2 {
+		err = errors.New("Unable to get filename")
+		return "", err
+	}
+	duri = duri + match[1]
+	return duri, nil
 }
 
 func createSession(client *http.Client) (ses *uploadSession, err error) {

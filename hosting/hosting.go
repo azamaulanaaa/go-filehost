@@ -16,4 +16,5 @@ type URL struct {
 // Service is interface
 type Service interface {
 	Upload(ctx context.Context, filename string, filereader io.Reader) []URL
+	DirectDownloadURI(ctx context.Context, uri string) string
 }

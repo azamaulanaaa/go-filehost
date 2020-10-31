@@ -20,3 +20,11 @@ func TestUpload(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestDirectDownloadURI(t *testing.T) {
+	zippy := &zippyshare.Service{}
+	_, err := zippy.DirectDownloadURI(context.TODO(), "https://www106.zippyshare.com/v/1SMt0BDP/file.html")
+	if err != nil {
+		t.Error(err)
+	}
+}
