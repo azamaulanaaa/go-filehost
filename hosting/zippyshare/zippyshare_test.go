@@ -2,7 +2,7 @@ package zippyshare_test
 
 import (
 	"context"
-	"filehost/hosting/zippyshare"
+	"github.com/azamaulanaaa/go-filehost/hosting/zippyshare"
 	"os"
 	"testing"
 )
